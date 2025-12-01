@@ -1,0 +1,8 @@
+# Dev Fastchat config file
+fastchat.config.dev.json
+
+# Fastchat config file (vulnerable information)
+fastchat.config.json
+
+# Environment variables file
+.env
