@@ -83,9 +83,9 @@ Esta opción es útil para explorar el flujo de trabajo del agente y validar cas
 Para ejecutar el agente de forma local y completa, siga estos pasos generales:
 
 1. Levantar los servidores MCP requeridos:
-    - Servidor SQLite MCP. [ver doc]()
-    - Servidor de envío de mensajes. [ver doc]()
-2. Configurar el archivo `fastchat.config.json` con la información de conexión a cada MCP (host, puerto, herramientas, etc.), siguiendo las [instrucciones oficiales de Fastchat-MCP]().
+    - Servidor SQLite MCP. [ver doc](https://github.com/rb58853/sqlite-mcp-server)
+    - Servidor de envío de mensajes. [ver doc](https://github.com/rb58853/MCP-Send-Message-Simulation)
+2. Configurar el archivo `fastchat.config.json` con la información de conexión a cada MCP (host, puerto, herramientas, etc.), siguiendo las [instrucciones oficiales de Fastchat-MCP](https://github.com/rb58853/fastchat-mcp).
 3. Ejecutar el cliente de terminal para interactuar con el agente desde el script [`terminal_chat.py`](./src/terminal_chat.py), Este script permite probar el agente desde la línea de comandos.
 ![alt text](doc/image.png)
 
