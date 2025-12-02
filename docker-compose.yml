@@ -1,0 +1,16 @@
+name: "Technova Agent"
+
+services:
+  agent:
+    image: technova-agent:latest
+    container_name: technova-agent
+    build:
+      context: .
+      dockerfile: dockerfile
+      tags:
+        - technova-agent
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - 8000:8000

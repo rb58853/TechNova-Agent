@@ -6,3 +6,6 @@ fastchat.config.json
 
 # Environment variables file
 .env
+
+# Cache
+*.pyc
