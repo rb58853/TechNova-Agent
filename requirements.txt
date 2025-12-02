@@ -1,2 +1,2 @@
-fastchat-mcp
-PyYaml
+fastchat-mcp==1.2.5
+PyYAML

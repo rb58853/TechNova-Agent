@@ -7,7 +7,7 @@
             "name": "sqlite_server",
             "description": "This server specializes in sqlite operations.",
             "headers": {
-                "MASTER-TOKEN": "<YOUR API AUTH MASTER TOKEN HERE>>"
+                "MASTER-TOKEN": "<SQLITE-MCP-SERVER API AUTH MASTER-TOKEN HERE>>"
             }
         },
         "messages_simulation": {
@@ -16,5 +16,10 @@
             "name": "send_message_service",
             "description": "This server specializes in send messages as simulation."
         }
+    },
+    "auth_middleware": {
+        "database_api_path": "...",
+        "master-token": "<your-auth-master-token-here>",
+        "headers": {}
     }
 }

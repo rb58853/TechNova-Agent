@@ -9,3 +9,6 @@ fastchat.config.json
 
 # Cache
 *.pyc
+
+# vscode config
+.vscode/launch.json
