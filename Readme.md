@@ -74,7 +74,7 @@ Este comando construirá la imagen, levantará el contenedor en segundo plano y 
 
 Para una prueba rápida sin necesidad de montar todo el entorno localmente, se proporciona una interfaz web del agente disponible en:
 
-- https://rb58853.github.io/TchnovaAgent
+- https://rb58853.github.io/Technova-Agent-web/
 
 Esta opción es útil para explorar el flujo de trabajo del agente y validar casos de usos sin necesidad de montar todos los servicios local.
 
