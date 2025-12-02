@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 
 # Run the app
-CMD ["uvicorn", "src.api.server:app", "--host", "0.0.0.0", "--port 8000", "--ws-ping-interval", "0", "--ws-ping-timeout", "1200", "--workers", "1"]
+CMD ["uvicorn", "src.api.server:app", "--host", "0.0.0.0", "--port", "8000", "--ws-ping-interval", "0", "--ws-ping-timeout", "1200", "--workers", "1"]
