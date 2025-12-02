@@ -9,3 +9,4 @@ chat = TerminalChat(
     extra_selection_system_prompts=[base_prompt],
 )
 chat.open()
+
