@@ -2,15 +2,33 @@ import dotenv
 
 dotenv.load_dotenv()
 
+from fastapi import FastAPI
 from fastchat import FastApp
+from fastchat.config import AuthApiConfig
 from ..prompts import get_system_prompt
 
+# ------------------------------------------------
+#                  PROMPTS                       #
+# ------------------------------------------------
 base_prompt: str = get_system_prompt("base_prompt")
+md: str = get_system_prompt("md")
+no_sql: str = get_system_prompt("no_sql")
+# ------------------------------------------------
 
-fastapp = FastApp(
-    extra_reponse_system_prompts=[base_prompt],
-    extra_selection_system_prompts=[base_prompt],
-    len_context=20,
+# ------------------------------------------------
+#               Auth Settings                    #
+# ------------------------------------------------
+auth_settings = AuthApiConfig().new_override(
+    {"log_lv": "DEBUG"},
 )
+# ------------------------------------------------
 
-app = fastapp.app
+
+# ------------------------------------------------
+#                Fastapi App                     #
+# ------------------------------------------------
+fastapp: FastApp = FastApp(
+    extra_reponse_system_prompts=[base_prompt, md],
+    extra_selection_system_prompts=[base_prompt, no_sql],
+)
+app: FastAPI = fastapp.app
