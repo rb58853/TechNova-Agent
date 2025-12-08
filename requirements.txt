@@ -1,3 +1,3 @@
-fastchat-mcp==1.2.5
+fastchat-mcp
 PyYAML
 aiohttp
