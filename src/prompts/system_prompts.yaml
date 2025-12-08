@@ -7,6 +7,9 @@ base_prompt: |
   - notebooks
   - accesorios
 
+selection_filter: |
+  Es muy importante que tengas en cuenta todo el historial del chat al momento de seleccionar un servicio. Por ejemplo si ya se extrajo una informacion dada y lo proximo depende de esta informacion, no debes volver a llamar al servicio que extrae esta informacion ya que esta informacion ya la tienes, lo mas probable es que tengas que usar otro servicio al cual pasarle la informacion ya extraida.
+  
 no_sql: |
   Es muy importante que al momento de dividir una consulta en subconsultas, no generes codigo SQL como una subconsulta.
 
