@@ -1,15 +1,76 @@
-# Technova Agent 
-Technova Agent es un agente inteligente que orquesta múltiples servicios MCP para consultar datos empresariales y simular el envío de comunicaciones a clientes de manera coherente, trazable y desacoplada. Este repositorio contiene tanto la API del agente como las instrucciones necesarias para ejecutarlo en entornos locales y con contenedores.
+# Technova Agent
+
+Technova Agent es un agente inteligente que orquesta múltiples servicios [MCP](https://modelcontextprotocol.io/docs/getting-started/intro) para consultar datos empresariales y simular el envío de comunicaciones a clientes de manera coherente, trazable y desacoplada. Este repositorio contiene tanto la API del agente como las instrucciones necesarias para ejecutarlo en entornos locales y con contenedores.
+
+### [Probar Technova Agent Web App](https://rb58853.github.io/Technova-Agent-web/)
 
 ## Descripción general
 
-Technova Agent utiliza Fastchat-MCP como controlador principal y se conecta a dos servidores MCP especializados: uno para consultas sobre la base de datos SQLite de Technova y otro para la simulación de envío de mensajes y correos electrónicos. El objetivo es permitir flujos complejos como extraer información de ventas y, en el mismo flujo, “enviar” dicha información a clientes específicos siguiendo una lógica de negocio razonable.
+Technova Agent utiliza [Fastchat-MCP](https://github.com/rb58853/fastchat-mcp) como controlador principal y se conecta a dos servidores MCP especializados: uno para consultas sobre la base de datos SQLite de Technova y otro para la simulación de envío de mensajes y correos electrónicos. El objetivo es permitir flujos complejos como extraer información de ventas y, en el mismo flujo, “enviar” dicha información a clientes específicos siguiendo una lógica de negocio razonable.
 
 Entre los escenarios soportados se incluyen, por ejemplo, las siguientes conversaciones:
 
 - Busca la informacion de las ventas, mandale esta informacion de ventas a Pedro Alvarez por correo. [ver conversacion](./doc/chats/Busca%20la%20inform....md)
--  Manda la informacion de las todas las ventas generales a cada uno de los clientes de Chile, por correo electronico y por mensaje al telefono. [ver conversacion](./doc/chats/Manda%20la%20inform....md)
+- Manda la informacion de las todas las ventas generales a cada uno de los clientes de Chile, por correo electronico y por mensaje al telefono. [ver conversacion](./doc/chats/Manda%20la%20inform....md)
 
+## Flujo
+
+> Notese que este flujo posee una extensibilidad, escalabilidad y desacoplamiento muy avanzados. Sin modificar nada del codigo del agente, se le podria pasar mas servidores MCP y deberia poder integrarlos perfectamente con los Servicios que posee actualmente.
+
+### API
+
+Para crear o levantar la api se siguen los siguientes pasos para usar el servicio de `Fastchat-MCP` y modificarlo a nuestras necesidades:
+
+- Se crea una instancia de `Fastapp` desde el paquete `Fastchat-MCP`. (  [ver documentacion en **Fastapp: REST API & WebSocket Exposure**](https://github.com/rb58853/fastchat-mcp/blob/main/doc/USAGE.md) )
+- Se le pasan prompts de system y de seleccion de servicios mcp a esta instancia. ( [ver documentacion en **Customizing System Prompts**](https://github.com/rb58853/fastchat-mcp/blob/main/doc/USAGE.md) ). Estos prompts estan definidos en el archivo [system_prompts.yaml](./src/prompts/system_prompts.yaml).
+- Una vez se tiene confgurada nuestra instancia de `Fastapp` se levanta esta con uvicorn para exponer un websocket al cual se conecta el frontend.
+
+### Inicializacion del Chat
+
+- El Chat generado desde `Fastchat-MCP` reibe una lista de conexiones MCP desde el archivo de configuracion `fastchat.config.json` ([ver doc](https://github.com/rb58853/fastchat-mcp)).
+
+- Registra cada una de las herramientas, recursos prompts en un [Manager de MCP](https://github.com/rb58853/fastchat-mcp/blob/main/src/fastchat/app/mcp_manager/client.py), esta manager de MCP es el encargado de conectarse con los servidores MCP y servirlos hacia el LLM.
+
+### Agente
+
+El agente tiene el flujo dado por los siguientes pasos:
+
+- Recibe una consulta del usuario
+- Divide la consulta en subconsultas en caso de ser necesario para usar mas de un servicio. Por ejemplo, puede dividir la consulta para extraer informacion de las ventas y luego enviar esta informacion por correo a un cliente.
+- Por cada una de las querys hace lo siguiente:
+  - Selecciona los prompts adecuados para esta query desde la lista de prompts que posee en desde los MCP.
+  - Si existe prompts o agrega como `system_prompt` o como `user_prompt`, dependiendo de como se defna desde el servidor MCP.
+  - Busca el servicio adecuado para esta query (resource o tool) y genera los argumentos del mismo en caso de encontrarlo.
+  - Si existe este servicio lo llama desde una conexion MCP pasandole los argumentos generados (Para esto Fastchat-MCP usa [`mcp[cli]`](https://github.com/modelcontextprotocol/python-sdk)). Recibe la informacion desde el servidor y genera una respuesta final segun los datos recuperados.
+  - Si no existe un servicio, da la respuesta final directamnte, ademas usa como contexto los servicios expuestos, de esta forma, es consciente de las capacidades que tiene y lo que puede responder y tareas que pueda hacer segun los servicios dados.
+
+- Repite el proceso por cada una de las subconsultas generadas.
+
+Para entender mejor el flujo, a continuacion de presenta [el fujo de `fastchat-mcp`](https://github.com/rb58853/fastchat-mcp/blob/main/doc/FLOW.md):
+
+```mermaid
+flowchart TD
+    A[Start] --> B[Load Configuration]
+    B --> C[Initialize Servers]
+    C --> D[Initialize Tools, Resources, and Prompts]
+    D --> E{Wait for User Query}
+    
+    E --> F[Send Query to LLM]
+    F --> H[Select Prompts from Servers]
+    H --> I[Select Tool or Resource and Generate Args for this Service from Servers]
+    I --> J{LLM Decision}
+    J --> |Tool or Resource Exists| K[Call Tool or Resource with Args] 
+    J --> |Tool or Resource is Null| L[Generate Simple Response Based on Servers' Exposed Information]
+    
+    K --> M[Add Result Data from Call to LLM Context]
+    M --> N[Generate Response Based on Passed Data] 
+    N --> O[Return Final Streamed Response to User]
+    
+    L --> O
+    O --> E
+```
+
+  
 
 ## Arquitectura y MCP conectados
 
@@ -17,10 +78,8 @@ Technova Agent se apoya en el patrón MCP (Model Context Protocol) para desacopl
 
 Los MCP utilizados actualmente son:
 
-- SQLite MCP Server
-Servidor MCP dedicado a ejecutar consultas SQL sobre una base de datos de ejemplo de la empresa Technova. Esta base de datos incluye, al menos, una tabla de ventas y una tabla de clientes, lo que permite responder a preguntas típicas de negocio sobre facturación, clientes y segmentos.
-- MCP-Send-Message-Simulation
-Servidor MCP de simulación que expone herramientas para “enviar” correos electrónicos a listas de direcciones y mensajes a listas de números de teléfono. No realiza envíos reales, sino que permite probar y validar el flujo de comunicación del agente.
+- [SQLite MCP Server](https://github.com/rb58853/sqlite-mcp-server): Servidor MCP dedicado a ejecutar consultas SQL sobre una base de datos de ejemplo de la empresa Technova. Esta base de datos incluye, al menos, una tabla de ventas y una tabla de clientes, lo que permite responder a preguntas típicas de negocio sobre facturación, clientes y segmentos.
+- [MCP-Send-Message-Simulation](https://github.com/rb58853/sqlite-mcp-server): Servidor MCP de simulación que expone herramientas para “enviar” correos electrónicos a listas de direcciones y mensajes a listas de números de teléfono. No realiza envíos reales, sino que permite probar y validar el flujo de comunicación del agente.
 
 Al utilizar MCP, cualquier cambio en el modelo de datos, en el proveedor de mensajería o en servicios adicionales se centraliza en el servidor MCP correspondiente. El agente solo necesita conocer las capacidades expuestas y coordinar un flujo lógico entre ellas, lo que mejora la mantenibilidad y la extensibilidad del sistema.
 
@@ -38,17 +97,20 @@ Asegúrese también de clonar o tener disponibles los repositorios de los servid
 ## Instalación y ejecución con Uvicorn
 
 1. Crear y activar el entorno virtual:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
 2. Instalar las dependencias del proyecto:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Iniciar la API con Uvicorn:
+
 ```bash
 uvicorn src.api.server:app \
   --host 0.0.0.0 \
@@ -74,7 +136,7 @@ Este comando construirá la imagen, levantará el contenedor en segundo plano y 
 
 Para una prueba rápida sin necesidad de montar todo el entorno localmente, se proporciona una interfaz web del agente disponible en:
 
-- https://rb58853.github.io/Technova-Agent-web/
+- <https://rb58853.github.io/Technova-Agent-web/>
 
 Esta opción es útil para explorar el flujo de trabajo del agente y validar casos de usos sin necesidad de montar todos los servicios local.
 
@@ -105,14 +167,14 @@ Esta arquitectura hace que Technova Agent sea una base sólida para experimentos
 Para ampliar la información sobre el flujo del agente y los servicios utilizados, consulte:
 
 - Flujo del agente (diagrama y explicación):
-https://github.com/rb58853/fastchat-mcp/blob/main/doc/FLOW.md
+<https://github.com/rb58853/fastchat-mcp/blob/main/doc/FLOW.md>
 - Fastchat-MCP (controlador del agente):
-https://github.com/rb58853/fastchat-mcp
+<https://github.com/rb58853/fastchat-mcp>
 - SQLite MCP Server (consultas a la base de datos de Technova):
-https://github.com/rb58853/sqlite-mcp-server
+<https://github.com/rb58853/sqlite-mcp-server>
 - MCP-Send-Message-Simulation (simulación de envío de correos y mensajes):
-https://github.com/rb58853/MCP-Send-Message-Simulation
+<https://github.com/rb58853/MCP-Send-Message-Simulation>
 - Fastauth-API (autenticación, si aplica en su configuración):
-https://github.com/rb58853/fastauth-api
+<https://github.com/rb58853/fastauth-api>
 - Python MCP SDK (SDK oficial para implementar servidores MCP en Python):
-https://github.com/modelcontextprotocol/python-sdk
+<https://github.com/modelcontextprotocol/python-sdk>
