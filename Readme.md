@@ -2,7 +2,24 @@
 
 Technova Agent es un agente inteligente que orquesta múltiples servicios [MCP](https://modelcontextprotocol.io/docs/getting-started/intro) para consultar datos empresariales y simular el envío de comunicaciones a clientes de manera coherente, trazable y desacoplada. Este repositorio contiene tanto la API del agente como las instrucciones necesarias para ejecutarlo en entornos locales y con contenedores.
 
-### [Probar Technova Agent Web App](https://rb58853.github.io/Technova-Agent-web/)
+> [Probar Technova Agent Web App](https://rb58853.github.io/Technova-Agent-web/)
+
+## Tabla de Contenidos
+
+1. [Descripción general](#descripción-general)
+2. [Flujo](#flujo)  
+   - [API](#api)
+   - [Inicialización del Chat](#inicialización-del-chat)
+   - [Agente](#agente)
+3. [Arquitectura y MCP conectados](#arquitectura-y-mcp-conectados)
+4. [Requisitos previos](#requisitos-previos)
+5. [Instalación y ejecución con Uvicorn](#instalación-y-ejecución-con-uvicorn)
+6. [Ejecución con Docker / Docker Compose](#ejecución-con-docker--docker-compose)
+7. [Uso del agente](#uso-del-agente)
+   - [Uso vía interfaz web](#uso-vía-interfaz-web)
+   - [Uso local](#uso-local)
+8. [Ventajas de usar MCP](#ventajas-de-usar-mcp)
+9. [Recursos relacionados](#recursos-relacionados)
 
 ## Descripción general
 
@@ -15,38 +32,39 @@ Entre los escenarios soportados se incluyen, por ejemplo, las siguientes convers
 
 ## Flujo
 
-> Notese que este flujo posee una extensibilidad, escalabilidad y desacoplamiento muy avanzados. Sin modificar nada del codigo del agente, se le podria pasar mas servidores MCP y deberia poder integrarlos perfectamente con los Servicios que posee actualmente.
+> Este flujo destaca por su alto nivel de extensibilidad, escalabilidad y desacoplamiento. Sin realizar ninguna modificación en el código del agente, es posible integrar múltiples servidores MCP adicionales, los cuales se incorporarán de manera transparente con los Servicios existentes.
 
 ### API
 
-Para crear o levantar la api se siguen los siguientes pasos para usar el servicio de `Fastchat-MCP` y modificarlo a nuestras necesidades:
+Para crear o iniciar la API, se deben seguir los siguientes pasos con el fin de utilizar el servicio de `Fastchat-MCP` y adaptarlo a los requerimientos específicos del proyecto:
 
-- Se crea una instancia de `Fastapp` desde el paquete `Fastchat-MCP`. (  [ver documentacion en **Fastapp: REST API & WebSocket Exposure**](https://github.com/rb58853/fastchat-mcp/blob/main/doc/USAGE.md) )
-- Se le pasan prompts de system y de seleccion de servicios mcp a esta instancia. ( [ver documentacion en **Customizing System Prompts**](https://github.com/rb58853/fastchat-mcp/blob/main/doc/USAGE.md) ). Estos prompts estan definidos en el archivo [system_prompts.yaml](./src/prompts/system_prompts.yaml).
-- Una vez se tiene confgurada nuestra instancia de `Fastapp` se levanta esta con uvicorn para exponer un websocket al cual se conecta el frontend.
+- Se crea una instancia de `Fastapp` a partir del paquete `Fastchat-MCP`. ([Ver documentación en **Fastapp: REST API & WebSocket Exposure**](https://github.com/rb58853/fastchat-mcp/blob/main/doc/USAGE.md))
+- A esta instancia se le proporcionan los *system prompts* y los *service selection prompts* de MCP. ([Ver documentación en **Customizing System Prompts**](https://github.com/rb58853/fastchat-mcp/blob/main/doc/USAGE.md)). Estos prompts están definidos en el archivo [system_prompts.yaml](./src/prompts/system_prompts.yaml).
+- Una vez configurada la instancia de `Fastapp`, se ejecuta con [**uvicorn**](#instalación-y-ejecución-con-uvicorn) para exponer un WebSocket al cual se conecta el frontend.
 
-### Inicializacion del Chat
+> ver [src/api/server.py](src/api/server.py)
 
-- El Chat generado desde `Fastchat-MCP` reibe una lista de conexiones MCP desde el archivo de configuracion `fastchat.config.json` ([ver doc](https://github.com/rb58853/fastchat-mcp)).
+### Inicialización del Chat
 
-- Registra cada una de las herramientas, recursos prompts en un [Manager de MCP](https://github.com/rb58853/fastchat-mcp/blob/main/src/fastchat/app/mcp_manager/client.py), esta manager de MCP es el encargado de conectarse con los servidores MCP y servirlos hacia el LLM.
+- El chat generado por `Fastchat-MCP` recibe una lista de conexiones MCP definidas en el archivo de configuración `fastchat.config.json`. ([Ver doc](https://github.com/rb58853/fastchat-mcp))
+- Cada herramienta, recurso y prompt se registra en un [Gestor de MCP](https://github.com/rb58853/fastchat-mcp/blob/main/src/fastchat/app/mcp_manager/client.py). Este gestor es el encargado de establecer las conexiones con los servidores MCP y de ponerlos a disposición del LLM.
 
 ### Agente
 
-El agente tiene el flujo dado por los siguientes pasos:
+El flujo de funcionamiento del agente se compone de los siguientes pasos:
 
-- Recibe una consulta del usuario
-- Divide la consulta en subconsultas en caso de ser necesario para usar mas de un servicio. Por ejemplo, puede dividir la consulta para extraer informacion de las ventas y luego enviar esta informacion por correo a un cliente.
-- Por cada una de las querys hace lo siguiente:
-  - Selecciona los prompts adecuados para esta query desde la lista de prompts que posee en desde los MCP.
-  - Si existe prompts o agrega como `system_prompt` o como `user_prompt`, dependiendo de como se defna desde el servidor MCP.
-  - Busca el servicio adecuado para esta query (resource o tool) y genera los argumentos del mismo en caso de encontrarlo.
-  - Si existe este servicio lo llama desde una conexion MCP pasandole los argumentos generados (Para esto Fastchat-MCP usa [`mcp[cli]`](https://github.com/modelcontextprotocol/python-sdk)). Recibe la informacion desde el servidor y genera una respuesta final segun los datos recuperados.
-  - Si no existe un servicio, da la respuesta final directamnte, ademas usa como contexto los servicios expuestos, de esta forma, es consciente de las capacidades que tiene y lo que puede responder y tareas que pueda hacer segun los servicios dados.
+- Recibe una consulta del usuario.  
+- Divide la consulta en subconsultas, si es necesario, para utilizar múltiples servicios. Por ejemplo, puede separar una tarea para obtener información de ventas y luego enviar dicha información por correo electrónico a un cliente.  
+- Para cada una de las *queries*, ejecuta las siguientes acciones:
+  - Selecciona los prompts más adecuados desde la lista definida en los MCP.
+  - Si existen prompts disponibles, los añade como `system_prompt` o `user_prompt`, según lo definido por el servidor MCP.
+  - Busca el servicio correspondiente a la consulta (recurso o herramienta) y genera los argumentos requeridos en caso de encontrarlo.
+  - Si el servicio existe, lo invoca a través de una conexión MCP pasándole los argumentos generados. Para ello, `Fastchat-MCP` utiliza [`mcp[cli]`](https://github.com/modelcontextprotocol/python-sdk). Tras recibir la información del servidor, el agente genera una respuesta final con base en los datos obtenidos.
+  - Si no existe un servicio adecuado, produce la respuesta final directamente. Además, considera el contexto de los servicios disponibles para ser consciente de sus propias capacidades y de las tareas que puede ejecutar según los servicios expuestos.
 
-- Repite el proceso por cada una de las subconsultas generadas.
+- Este proceso se repite por cada subconsulta generada.
 
-Para entender mejor el flujo, a continuacion de presenta [el fujo de `fastchat-mcp`](https://github.com/rb58853/fastchat-mcp/blob/main/doc/FLOW.md):
+Para comprender mejor este flujo, se recomienda consultar [el flujo de `fastchat-mcp`](https://github.com/rb58853/fastchat-mcp/blob/main/doc/FLOW.md):
 
 ```mermaid
 flowchart TD
@@ -69,8 +87,6 @@ flowchart TD
     L --> O
     O --> E
 ```
-
-  
 
 ## Arquitectura y MCP conectados
 
