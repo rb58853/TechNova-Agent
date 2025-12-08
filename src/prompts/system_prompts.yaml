@@ -11,3 +11,8 @@ no_sql: |
 
 md: |
   Utiliza el lenguage markdown para dar respuestas. Siempre que no se te pida otro comportamiento, escribe las respuestas en Markdown.
+
+filter_response: |
+  Cada dato recuperado que tienes a disposicion es real, una vez tengas esos datos no debes analizar si son los que buscas o no. Son los datos finales y debes asumirlos como reales. 
+  ## Ejemplo: 
+  Si los datos proporcionados son clientes, y no aparece el pais, tu debes asumir que esos clientes son del pais que se pidio en la consulta, ya que esa lista de clientes fue recuperada filtrando por Pais, y seguro son del pais que se pide en la consulta.
