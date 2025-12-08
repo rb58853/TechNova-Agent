@@ -38,4 +38,7 @@ jobs:
           script: |
             cd ${{ env.VPS_WORKING_DIR }}
             ls -la
-            docker compose -f docker-compose.yml up -d --build --force-recreate
+            docker compose down --volumes --rmi all --remove-orphans
+            docker compose build --no-cache
+            docker compose up -d --build
+
