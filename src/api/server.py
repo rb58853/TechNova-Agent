@@ -20,7 +20,8 @@ filter_response: str = get_system_prompt("filter_response")
 #                Fastapi App                     #
 # ------------------------------------------------
 fastapp: FastApp = FastApp(
-    extra_reponse_system_prompts=[base_prompt, md],
+    extra_reponse_system_prompts=[base_prompt, md, filter_response],
     extra_selection_system_prompts=[base_prompt, no_sql],
+    len_context=50,
 )
 app: FastAPI = fastapp.app
